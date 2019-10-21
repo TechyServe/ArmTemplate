@@ -175,15 +175,11 @@
     }
   ],
   "outputs": {
-    "designCosmosDb": {
-      "type": "object",
-      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
-      "value": {
-        "cosmosDBEndpoint": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbName'))).documentEndpoint]",
-        "authkey": "[listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbName')), '2015-04-08').primaryMasterKey]",
-        "databaseId": "botstate-db",
-        "collectionId": "botstate-collection"
-      }
+
+    "designCosmosDBConnectionString": {
+      "type": "string",
+      "value": "[concat('AccountEndpoint=https://', variables('cosmosDbName'), '.documents.azure.com:443/;AccountKey=', listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbName')), '2015-04-08').primaryMasterKey , ';')]"
+
     },
     "designApplicationInsights": {
       "condition": "[Not(bool(parameters('singleResourceGroup')))]",
