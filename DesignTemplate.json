@@ -1,0 +1,199 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+
+    "appServicePlanSku": {
+      "type": "object",
+      "defaultValue": {
+        "tier": "Standard",
+        "name": "S1"
+      }
+    },
+    "botId": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().name]"
+    },
+    "singleResourceGroup": {
+      "type": "bool",
+      "defaultValue": false,
+      "allowedValues": [
+       true,
+       false
+      ]
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "parentAppServiceName": {
+      "type": "string"
+    },
+    "parentappInsightsName": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "resourceGroupName": "[concat(parameters('botId'), '-design')]",
+    "appServicePlanName": "[if(equals(parameters('singleResourceGroup'), 'true'), parameters('parentAppServiceName'),  concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6)))]",
+    "appInsightsName": "[if(equals(parameters('singleResourceGroup'), 'true'), parameters('parentAppServiceName'),  concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6)))]",
+    "cosmosDbName": "[if(equals(parameters('singleResourceGroup'), 'true'), toLower(parameters('botId')),  'DesignDB')]",
+    "designerWebAppName": "[concat(parameters('botId'), '-DesignerStudio')]",
+    "designerApiName": "[concat(parameters('botId'), '-ConversationAPI')]"
+  },
+  "resources": [
+    {
+      "apiVersion": "2018-02-01",
+      "comments": "app service plan",
+      "condition": "[equals(parameters('singleResourceGroup'), 'false')]",
+      "location": "[parameters('location')]",
+      "name": "[variables('appServicePlanName')]",
+      "properties": {},
+      "sku": "[parameters('appServicePlanSku')]",
+      "type": "Microsoft.Web/serverFarms"
+    },
+    {
+      "comments": "app insights",
+      "type": "Microsoft.Insights/components",
+      "condition": "[equals(parameters('singleResourceGroup'), 'false')]",
+      "kind": "web",
+      "apiVersion": "2015-05-01",
+      "name": "[variables('appInsightsName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "Application_Type": "web"
+      }
+    },
+    {
+      "comments": "CosmosDB for bot state.",
+      "condition": "[equals(parameters('singleResourceGroup'), 'false')]",
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "kind": "GlobalDocumentDB",
+      "apiVersion": "2015-04-08",
+      "name": "[variables('cosmosDbName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "databaseAccountOfferType": "Standard",
+        "locations": [
+          {
+            "locationName": "[parameters('location')]",
+            "failoverPriority": 0
+          }
+        ]
+      }
+    },
+    {
+      "comments": "Conversation API",
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2016-08-01",
+      "name": "[variables('designerApiName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]",
+        "[resourceId('microsoft.insights/components/', variables('appInsightsName'))]"
+      ],
+      "kind": "api",
+      "properties": {
+        "enabled": true,
+        "hostNameSslStates": [
+          {
+            "name": "[concat(variables('designerApiName'), '.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Standard"
+          },
+          {
+            "name": "[concat(variables('designerApiName'), '.scm.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Repository"
+          }
+        ],
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('botId'))]",
+        "reserved": false,
+        "clientAffinityEnabled": true,
+        "clientCertEnabled": false,
+        "hostNamesDisabled": false,
+        "containerSize": 0,
+        "dailyMemoryTimeQuota": 0,
+        "httpsOnly": true,
+        "resources": [
+          {
+            "apiVersion": "2015-08-01",
+            "name": "appsettings",
+            "type": "config",
+            "dependsOn": [
+              "[resourceId('Microsoft.Web/Sites', variables('designerApiName'))]"
+            ],
+            "properties": {
+              "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(concat('microsoft.insights/components/', variables('appInsightsName'))).InstrumentationKey]"
+            }
+          },
+          {
+            "apiVersion": "2015-08-01",
+            "name": "Microsoft.AspNetCore.AzureAppServices.SiteExtension",
+            "type": "siteextensions",
+            "dependsOn": [
+              "[resourceId('Microsoft.Web/Sites', variables('designerApiName'))]"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "comments": "Designer Web App",
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2016-08-01",
+      "name": "[variables('designerWebAppName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]"
+      ],
+      "kind": "app",
+      "properties": {
+        "enabled": true,
+        "hostNameSslStates": [
+          {
+            "name": "[concat(variables('designerWebAppName'), '.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Standard"
+          },
+          {
+            "name": "[concat(variables('designerWebAppName'), '.scm.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Repository"
+          }
+        ],
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('botId'))]",
+        "reserved": false,
+        "clientAffinityEnabled": true,
+        "clientCertEnabled": false,
+        "hostNamesDisabled": false,
+        "containerSize": 0,
+        "dailyMemoryTimeQuota": 0,
+        "httpsOnly": true
+      }
+    }
+  ],
+  "outputs": {
+    "DesignCosmosDb": {
+      "type": "object",
+      "condition": "[equals(parameters('singleResourceGroup'), 'false')]",
+      "value": {
+        "cosmosDBEndpoint": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbName'))).documentEndpoint]",
+        "authkey": "[listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbName')), '2015-04-08').primaryMasterKey]",
+        "databaseId": "botstate-db",
+        "collectionId": "botstate-collection"
+      }
+    },
+    "DesignApplicationInsights": {
+      "condition": "[equals(parameters('singleResourceGroup'), 'false')]",
+      "type": "object",
+      "value": {
+        "InstrumentationKey": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName'))).InstrumentationKey]"
+      }
+    },
+    "conversationApiBaseUrl": {
+      "type": "string",
+      "value": "[concat('https://',variables('designerApiName'),'.azurewebsites.net')]"
+    }
+  }
+}
