@@ -43,8 +43,22 @@
   },
   "resources": [
     {
+      "apiVersion": "2018-02-01",
+      "name": "[variables('resourceGroupName')]",
+      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": []
+        }
+      }
+    },
+    {
       "comments": "app service plan",
-      "condition": "[equals(parameters('singleResourceGroup'), 'false')]",
+      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "Microsoft.Web/serverFarms",
       "apiVersion": "2018-02-01",
       "name": "[variables('appServicePlanName')]",
@@ -54,7 +68,7 @@
     },
     {
       "comments": "app insights",
-      "condition": "[equals(parameters('singleResourceGroup'), 'false')]",
+      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "Microsoft.Insights/components",
       "kind": "web",
       "apiVersion": "2015-05-01",
@@ -66,7 +80,7 @@
     },
     {
       "comments": "CosmosDB for bot state.",
-      "condition": "[equals(parameters('singleResourceGroup'), 'false')]",
+      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "Microsoft.DocumentDB/databaseAccounts",
       "kind": "GlobalDocumentDB",
       "apiVersion": "2015-04-08",
@@ -84,6 +98,7 @@
     },
     {
       "comments": "Conversation API",
+      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "Microsoft.Web/sites",
       "apiVersion": "2016-08-01",
       "name": "[variables('designerApiName')]",
@@ -140,6 +155,7 @@
     },
     {
       "comments": "Designer Web App",
+      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "Microsoft.Web/sites",
       "apiVersion": "2016-08-01",
       "name": "[variables('designerWebAppName')]",
@@ -176,7 +192,7 @@
   "outputs": {
     "DesignCosmosDb": {
       "type": "object",
-      "condition": "[equals(parameters('singleResourceGroup'), 'false')]",
+      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "value": {
         "cosmosDBEndpoint": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbName'))).documentEndpoint]",
         "authkey": "[listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbName')), '2015-04-08').primaryMasterKey]",
@@ -185,7 +201,7 @@
       }
     },
     "DesignApplicationInsights": {
-      "condition": "[equals(parameters('singleResourceGroup'), 'false')]",
+      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "object",
       "value": {
         "InstrumentationKey": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName'))).InstrumentationKey]"
