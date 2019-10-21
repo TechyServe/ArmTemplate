@@ -175,7 +175,7 @@
     }
   ],
   "outputs": {
-    "DesignCosmosDb": {
+    "designCosmosDb": {
       "type": "object",
       "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "value": {
@@ -185,7 +185,7 @@
         "collectionId": "botstate-collection"
       }
     },
-    "DesignApplicationInsights": {
+    "designApplicationInsights": {
       "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "object",
       "value": {
