@@ -54,7 +54,6 @@
     },
     {
       "comments": "app insights",
-      "apiVersion": "2015-05-01",
       "type": "Microsoft.Insights/components",
       "condition": "[equals(parameters('singleResourceGroup'), 'false')]",
       "kind": "web",
