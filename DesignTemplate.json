@@ -37,7 +37,7 @@
     "resourceGroupName": "[concat(parameters('botId'), '-design')]",
     "appServicePlanName": "[if(equals(parameters('singleResourceGroup'), 'true'), parameters('parentAppServiceName'),  concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6)))]",
     "appInsightsName": "[if(equals(parameters('singleResourceGroup'), 'true'), parameters('parentAppServiceName'),  concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6)))]",
-    "cosmosDbName": "[if(equals(parameters('singleResourceGroup'), 'true'), toLower(parameters('botId')),  'DesignDB')]",
+    "cosmosDbName": "[if(equals(parameters('singleResourceGroup'), 'true'), toLower(parameters('botId')),  'designdb')]",
     "designerWebAppName": "[concat(parameters('botId'), '-DesignerStudio')]",
     "designerApiName": "[concat(parameters('botId'), '-ConversationAPI')]"
   },
