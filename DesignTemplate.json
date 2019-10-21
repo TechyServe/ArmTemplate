@@ -42,7 +42,7 @@
     "designerApiName": "[concat(parameters('botId'), '-ConversationAPI')]"
   },
   "resources": [
-   
+
     {
       "comments": "app service plan",
       "condition": "[Not(bool(parameters('singleResourceGroup')))]",
@@ -85,7 +85,6 @@
     },
     {
       "comments": "Conversation API",
-      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "Microsoft.Web/sites",
       "apiVersion": "2016-08-01",
       "name": "[variables('designerApiName')]",
@@ -109,7 +108,7 @@
             "hostType": "Repository"
           }
         ],
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('botId'))]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms',variables('appServicePlanName'))]",
         "reserved": false,
         "clientAffinityEnabled": true,
         "clientCertEnabled": false,
@@ -142,7 +141,6 @@
     },
     {
       "comments": "Designer Web App",
-      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "Microsoft.Web/sites",
       "apiVersion": "2016-08-01",
       "name": "[variables('designerWebAppName')]",
@@ -165,7 +163,7 @@
             "hostType": "Repository"
           }
         ],
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('botId'))]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
         "reserved": false,
         "clientAffinityEnabled": true,
         "clientCertEnabled": false,
