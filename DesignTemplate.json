@@ -43,7 +43,22 @@
   },
   "resources": [
     {
+      "apiVersion": "2018-02-01",
+      "name": "[variables('resourceGroupName')]",
+      "condition": "[equals(parameters('singleResourceGroup'), 'false')]",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": []
+        }
+      }
+    },
+    {
       "comments": "app service plan",
+      "condition": "[equals(parameters('singleResourceGroup'), 'false')]",
       "type": "Microsoft.Web/serverFarms",
       "apiVersion": "2018-02-01",
       "name": "[variables('appServicePlanName')]",
@@ -53,6 +68,7 @@
     },
     {
       "comments": "app insights",
+      "condition": "[equals(parameters('singleResourceGroup'), 'false')]",
       "type": "Microsoft.Insights/components",
       "kind": "web",
       "apiVersion": "2015-05-01",
