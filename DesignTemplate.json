@@ -14,9 +14,9 @@
       "type": "string",
       "defaultValue": "[resourceGroup().name]"
     },
-    "singleResourceGroup": {
+    "createRedis": {
       "type": "bool",
-      "defaultValue": false,
+      "defaultValue": true,
       "allowedValues": [
        true,
        false
@@ -37,8 +37,6 @@
     "resourceGroupName": "[concat(parameters('botId'), '-design')]",
     "designAppServicePlanName": "[ concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6))]",
     "designAppInsightsName": "[ concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6))]",
-    "appServicePlanName": "[if(bool(parameters('singleResourceGroup')), parameters('parentAppServiceName'), variables('designAppServicePlanName'))]",
-    "appInsightsName": "[if(bool(parameters('singleResourceGroup')), parameters('parentappInsightsName'), variables('designAppInsightsName'))]",
     "designCosmosDbName": "[concat(toLower(parameters('botId')),'-designdb')]",
     "designerWebAppName": "[concat(parameters('botId'), '-DesignerStudio')]",
     "designerApiName": "[concat(parameters('botId'), '-ConversationAPI')]",
@@ -48,7 +46,6 @@
 
     {
       "comments": "app service plan",
-      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "Microsoft.Web/serverFarms",
       "apiVersion": "2018-02-01",
       "name": "[variables('designAppServicePlanName')]",
@@ -58,7 +55,6 @@
     },
     {
       "comments": "app insights",
-      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "Microsoft.Insights/components",
       "kind": "web",
       "apiVersion": "2015-05-01",
@@ -70,7 +66,6 @@
     },
     {
       "comments": "CosmosDB for bot state.",
-      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "Microsoft.DocumentDB/databaseAccounts",
       "kind": "GlobalDocumentDB",
       "apiVersion": "2015-04-08",
@@ -93,7 +88,7 @@
       "name": "[variables('designerApiName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]"
+        "[resourceId('Microsoft.Web/serverfarms/', variables('designAppServicePlanName'))]"
 
       ],
       "kind": "api",
@@ -111,7 +106,7 @@
             "hostType": "Repository"
           }
         ],
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms',variables('appServicePlanName'))]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms',variables('designAppServicePlanName'))]",
         "reserved": false,
         "clientAffinityEnabled": true,
         "clientCertEnabled": false,
@@ -132,7 +127,7 @@
               "Microsoft.ApplicationInsights.AzureWebSites"
             ],
             "properties": {
-              "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(concat('MIcrosoft.Insights/components/', variables('appInsightsName')),'2015-05-01').InstrumentationKey]"
+              "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(concat('MIcrosoft.Insights/components/', variables('designAppInsightsName')),'2015-05-01').InstrumentationKey]"
             }
           },
           {
@@ -153,7 +148,7 @@
       "name": "[variables('publishApiName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]"
+        "[resourceId('Microsoft.Web/serverfarms/', variables('designAppServicePlanName'))]"
 
       ],
       "kind": "api",
@@ -171,7 +166,7 @@
             "hostType": "Repository"
           }
         ],
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms',variables('appServicePlanName'))]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms',variables('designAppServicePlanName'))]",
         "reserved": false,
         "clientAffinityEnabled": true,
         "clientCertEnabled": false,
@@ -192,7 +187,7 @@
               "Microsoft.ApplicationInsights.AzureWebSites"
             ],
             "properties": {
-              "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(concat('MIcrosoft.Insights/components/', variables('appInsightsName')),'2015-05-01').InstrumentationKey]"
+              "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(concat('MIcrosoft.Insights/components/', variables('designAppInsightsName')),'2015-05-01').InstrumentationKey]"
             }
           },
           {
@@ -213,7 +208,7 @@
       "name": "[variables('designerWebAppName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]"
+        "[resourceId('Microsoft.Web/serverfarms/', variables('designAppServicePlanName'))]"
       ],
       "kind": "app",
       "properties": {
@@ -230,7 +225,7 @@
             "hostType": "Repository"
           }
         ],
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('designAppServicePlanName'))]",
         "reserved": false,
         "clientAffinityEnabled": true,
         "clientCertEnabled": false,
@@ -244,10 +239,17 @@
   "outputs": {
 
     "designDBConnectionString": {
-      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
+     
       "type": "string",
       "value": "[concat('AccountEndpoint=https://', variables('designCosmosDbName'), '.documents.azure.com:443/;AccountKey=', listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('designCosmosDbName')), '2015-04-08').primaryMasterKey , ';')]"
 
+    },
+    "designApplicationInsights": {
+     
+      "type": "object",
+      "value": {
+        "InstrumentationKey": "[reference(resourceId('Microsoft.Insights/components', variables('DesignAppInsightsName')),'2015-05-01').InstrumentationKey]"
+      }
     },
     "conversationApiBaseUrl": {
       "type": "string",
