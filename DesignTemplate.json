@@ -35,9 +35,11 @@
   },
   "variables": {
     "resourceGroupName": "[concat(parameters('botId'), '-design')]",
-    "appServicePlanName": "[if(bool(parameters('singleResourceGroup')), parameters('parentAppServiceName'),  concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6)))]",
-    "appInsightsName": "[if(bool(parameters('singleResourceGroup')), parameters('parentappInsightsName'),  concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6)))]",
-    "cosmosDbName": "[if(bool(parameters('singleResourceGroup')), toLower(parameters('botId')),  concat(toLower(parameters('botId')),'-designdb'))]",
+    "designAppServicePlanName": "[ concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6))]",
+    "designAppInsightsName": "[ concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6))]",
+    "appServicePlanName": "[if(bool(parameters('singleResourceGroup')), parameters('parentAppServiceName'), variables('designAppServicePlanName'))]",
+    "appInsightsName": "[if(bool(parameters('singleResourceGroup')), parameters('parentappInsightsName'), variables('designAppInsightsName'))]",
+    "designCosmosDbName": "[concat(toLower(parameters('botId')),'-designdb')]",
     "designerWebAppName": "[concat(parameters('botId'), '-DesignerStudio')]",
     "designerApiName": "[concat(parameters('botId'), '-ConversationAPI')]",
     "publishApiName": "[concat(parameters('botId'), '-publishing')]"
@@ -49,7 +51,7 @@
       "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "Microsoft.Web/serverFarms",
       "apiVersion": "2018-02-01",
-      "name": "[variables('appServicePlanName')]",
+      "name": "[variables('designAppServicePlanName')]",
       "location": "[parameters('location')]",
       "sku": "[parameters('appServicePlanSku')]",
       "properties": {}
@@ -60,7 +62,7 @@
       "type": "Microsoft.Insights/components",
       "kind": "web",
       "apiVersion": "2015-05-01",
-      "name": "[variables('appInsightsName')]",
+      "name": "[variables('designAppInsightsName')]",
       "location": "[parameters('location')]",
       "properties": {
         "Application_Type": "web"
@@ -72,7 +74,7 @@
       "type": "Microsoft.DocumentDB/databaseAccounts",
       "kind": "GlobalDocumentDB",
       "apiVersion": "2015-04-08",
-      "name": "[variables('cosmosDbName')]",
+      "name": "[variables('designCosmosDbName')]",
       "location": "[parameters('location')]",
       "properties": {
         "databaseAccountOfferType": "Standard",
@@ -242,11 +244,13 @@
   "outputs": {
 
     "designDBConnectionString": {
+      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "string",
-      "value": "[concat('AccountEndpoint=https://', variables('cosmosDbName'), '.documents.azure.com:443/;AccountKey=', listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbName')), '2015-04-08').primaryMasterKey , ';')]"
+      "value": "[concat('AccountEndpoint=https://', variables('designCosmosDbName'), '.documents.azure.com:443/;AccountKey=', listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('designCosmosDbName')), '2015-04-08').primaryMasterKey , ';')]"
 
     },
     "designApplicationInsights": {
+      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "object",
       "value": {
         "InstrumentationKey": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')),'2015-05-01').InstrumentationKey]"
