@@ -35,9 +35,9 @@
   },
   "variables": {
     "resourceGroupName": "[concat(parameters('botId'), '-design')]",
-    "appServicePlanName": "[if(equals(parameters('singleResourceGroup'), 'true'), parameters('parentAppServiceName'),  concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6)))]",
-    "appInsightsName": "[if(equals(parameters('singleResourceGroup'), 'true'), parameters('parentAppServiceName'),  concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6)))]",
-    "cosmosDbName": "[if(equals(parameters('singleResourceGroup'), 'true'), toLower(parameters('botId')),  'designdb')]",
+    "appServicePlanName": "[if(bool(parameters('singleResourceGroup')), parameters('parentAppServiceName'),  concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6)))]",
+    "appInsightsName": "[if(bool(parameters('singleResourceGroup')), parameters('parentappInsightsName'),  concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6)))]",
+    "cosmosDbName": "[if(bool(parameters('singleResourceGroup')), toLower(parameters('botId')),  concat(toLower(parameters('botId')),'designdb'))]",
     "designerWebAppName": "[concat(parameters('botId'), '-DesignerStudio')]",
     "designerApiName": "[concat(parameters('botId'), '-ConversationAPI')]"
   },
@@ -90,8 +90,8 @@
       "name": "[variables('designerApiName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]",
-        "[resourceId('microsoft.insights/components/', variables('appInsightsName'))]"
+        "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]"
+       
       ],
       "kind": "api",
       "properties": {
@@ -116,21 +116,25 @@
         "containerSize": 0,
         "dailyMemoryTimeQuota": 0,
         "httpsOnly": true,
+        "siteConfig": {
+          "AlwaysOn": true
+        },
         "resources": [
           {
             "apiVersion": "2015-08-01",
             "name": "appsettings",
             "type": "config",
             "dependsOn": [
-              "[resourceId('Microsoft.Web/Sites', variables('designerApiName'))]"
+              "[resourceId('Microsoft.Web/Sites', variables('designerApiName'))]",
+              "Microsoft.ApplicationInsights.AzureWebSites"
             ],
             "properties": {
-              "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(concat('microsoft.insights/components/', variables('appInsightsName'))).InstrumentationKey]"
+              "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(concat('MIcrosoft.Insights/components/', variables('appInsightsName')),'2015-05-01').InstrumentationKey]"
             }
           },
           {
             "apiVersion": "2015-08-01",
-            "name": "Microsoft.AspNetCore.AzureAppServices.SiteExtension",
+            "name": "Microsoft.ApplicationInsights.SiteExtension",
             "type": "siteextensions",
             "dependsOn": [
               "[resourceId('Microsoft.Web/Sites', variables('designerApiName'))]"
@@ -176,16 +180,15 @@
   ],
   "outputs": {
 
-    "designCosmosDBConnectionString": {
+    "designDBConnectionString": {
       "type": "string",
       "value": "[concat('AccountEndpoint=https://', variables('cosmosDbName'), '.documents.azure.com:443/;AccountKey=', listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDbName')), '2015-04-08').primaryMasterKey , ';')]"
 
     },
     "designApplicationInsights": {
-      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
       "type": "object",
       "value": {
-        "InstrumentationKey": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName'))).InstrumentationKey]"
+        "InstrumentationKey": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')),'2015-05-01').InstrumentationKey]"
       }
     },
     "conversationApiBaseUrl": {
