@@ -37,9 +37,10 @@
     "resourceGroupName": "[concat(parameters('botId'), '-design')]",
     "appServicePlanName": "[if(bool(parameters('singleResourceGroup')), parameters('parentAppServiceName'),  concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6)))]",
     "appInsightsName": "[if(bool(parameters('singleResourceGroup')), parameters('parentappInsightsName'),  concat(parameters('botId'), substring(uniqueString(parameters('botId')), 0, 6)))]",
-    "cosmosDbName": "[if(bool(parameters('singleResourceGroup')), toLower(parameters('botId')),  concat(toLower(parameters('botId')),'designdb'))]",
+    "cosmosDbName": "[if(bool(parameters('singleResourceGroup')), toLower(parameters('botId')),  concat(toLower(parameters('botId')),'-designdb'))]",
     "designerWebAppName": "[concat(parameters('botId'), '-DesignerStudio')]",
-    "designerApiName": "[concat(parameters('botId'), '-ConversationAPI')]"
+    "designerApiName": "[concat(parameters('botId'), '-ConversationAPI')]",
+    "publishApiName": "[concat(parameters('botId'), '-publishing')]"
   },
   "resources": [
 
@@ -91,7 +92,7 @@
       "location": "[parameters('location')]",
       "dependsOn": [
         "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]"
-       
+
       ],
       "kind": "api",
       "properties": {
@@ -138,6 +139,66 @@
             "type": "siteextensions",
             "dependsOn": [
               "[resourceId('Microsoft.Web/Sites', variables('designerApiName'))]"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "comments": "Publishing API",
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2016-08-01",
+      "name": "[variables('publishApiName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]"
+
+      ],
+      "kind": "api",
+      "properties": {
+        "enabled": true,
+        "hostNameSslStates": [
+          {
+            "name": "[concat(variables('publishApiName'), '.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Standard"
+          },
+          {
+            "name": "[concat(variables('publishApiName'), '.scm.azurewebsites.net')]",
+            "sslState": "Disabled",
+            "hostType": "Repository"
+          }
+        ],
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms',variables('appServicePlanName'))]",
+        "reserved": false,
+        "clientAffinityEnabled": true,
+        "clientCertEnabled": false,
+        "hostNamesDisabled": false,
+        "containerSize": 0,
+        "dailyMemoryTimeQuota": 0,
+        "httpsOnly": true,
+        "siteConfig": {
+          "AlwaysOn": true
+        },
+        "resources": [
+          {
+            "apiVersion": "2015-08-01",
+            "name": "appsettings",
+            "type": "config",
+            "dependsOn": [
+              "[resourceId('Microsoft.Web/Sites', variables('publishApiName'))]",
+              "Microsoft.ApplicationInsights.AzureWebSites"
+            ],
+            "properties": {
+              "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(concat('MIcrosoft.Insights/components/', variables('appInsightsName')),'2015-05-01').InstrumentationKey]"
+            }
+          },
+          {
+            "apiVersion": "2015-08-01",
+            "name": "Microsoft.ApplicationInsights.SiteExtension",
+            "type": "siteextensions",
+            "dependsOn": [
+              "[resourceId('Microsoft.Web/Sites', variables('publishApiName'))]"
             ]
           }
         ]
