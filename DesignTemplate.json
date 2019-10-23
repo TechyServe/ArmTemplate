@@ -249,13 +249,6 @@
       "value": "[concat('AccountEndpoint=https://', variables('designCosmosDbName'), '.documents.azure.com:443/;AccountKey=', listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('designCosmosDbName')), '2015-04-08').primaryMasterKey , ';')]"
 
     },
-    "designApplicationInsights": {
-      "condition": "[Not(bool(parameters('singleResourceGroup')))]",
-      "type": "object",
-      "value": {
-        "InstrumentationKey": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')),'2015-05-01').InstrumentationKey]"
-      }
-    },
     "conversationApiBaseUrl": {
       "type": "string",
       "value": "[concat('https://',variables('designerApiName'),'.azurewebsites.net')]"
